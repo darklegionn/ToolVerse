@@ -2,7 +2,8 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import axios from 'axios';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+// ✅ UPDATED BACKEND URL - Replace with your actual Render URL
+const BACKEND_URL = 'https://toolverse-backend-w2jb.onrender.com';
 const API = `${BACKEND_URL}/api`;
 
 const DOMAINS = [
