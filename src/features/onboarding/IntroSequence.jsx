@@ -1,30 +1,37 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
+// Module-level flag (survives component remounts)
+let hasTypingStartedGlobally = false;
+
 const IntroSequence = ({ onComplete }) => {
   const [phase, setPhase] = useState(0);
   const [typedText, setTypedText] = useState('');
   const quote = "A platform to guide students from confusion to clarity.";
-  const typingStartedRef = useRef(false);   // Prevents re‑typing
+  const typingStartedRef = useRef(hasTypingStartedGlobally);
+  const completedRef = useRef(false);
 
   const handleComplete = useCallback(() => {
+    if (completedRef.current) return;
+    completedRef.current = true;
     if (onComplete) onComplete();
   }, [onComplete]);
 
-  // Phase timings (unchanged from your working version)
+  // Phase timings
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 100),   // "Welcome to" appears
-      setTimeout(() => setPhase(2), 600),   // "TOOL VERSE" appears
-      setTimeout(() => setPhase(3), 1000),  // Typing starts
+      setTimeout(() => setPhase(1), 100),
+      setTimeout(() => setPhase(2), 600),
+      setTimeout(() => setPhase(3), 1000),
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  // Typing animation (runs only once, even if phase changes)
+  // Typing animation – runs only once globally
   useEffect(() => {
     if (phase < 3 || typingStartedRef.current) return;
     typingStartedRef.current = true;
+    hasTypingStartedGlobally = true;
 
     let currentIndex = 0;
     const typingInterval = setInterval(() => {
@@ -33,11 +40,11 @@ const IntroSequence = ({ onComplete }) => {
         currentIndex++;
       } else {
         clearInterval(typingInterval);
-        setTimeout(() => setPhase(4), 800);   // pause after typing
-        setTimeout(() => setPhase(5), 1300);  // begin fade‑out
-        setTimeout(() => handleComplete(), 1500); // full fade‑out + transition
+        setTimeout(() => setPhase(4), 800);
+        setTimeout(() => setPhase(5), 1300);
+        setTimeout(() => handleComplete(), 1500);
       }
-    }, 30); // 30ms per character → 1.65s for 55 characters
+    }, 30);
 
     return () => clearInterval(typingInterval);
   }, [phase, handleComplete, quote.length]);
@@ -60,7 +67,6 @@ const IntroSequence = ({ onComplete }) => {
       </div>
 
       <div className="text-center px-6 relative z-10">
-        {/* "Welcome to" */}
         <motion.div
           data-testid="welcome-text"
           initial={{ opacity: 0, y: 15 }}
@@ -72,7 +78,6 @@ const IntroSequence = ({ onComplete }) => {
           Welcome to
         </motion.div>
 
-        {/* "TOOL VERSE" */}
         <motion.h1
           data-testid="toolverse-title"
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -94,7 +99,6 @@ const IntroSequence = ({ onComplete }) => {
           </motion.span>
         </motion.h1>
 
-        {/* Underline */}
         <motion.div
           initial={{ scaleX: 0 }}
           animate={{ scaleX: phase >= 3 ? 1 : 0 }}
@@ -102,7 +106,6 @@ const IntroSequence = ({ onComplete }) => {
           className="w-24 h-[2px] bg-[#FF3300] mx-auto mb-6 origin-center"
         />
 
-        {/* Typing quote */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: phase >= 3 ? 1 : 0 }}
