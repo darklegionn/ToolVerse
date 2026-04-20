@@ -2,8 +2,8 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import axios from 'axios';
 
-// ✅ UPDATED BACKEND URL - Replace with your actual Render URL
-const BACKEND_URL = 'https://toolverse-backend-w2jb.onrender.com';
+// Get backend URL from environment variable
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://toolverse-backend-w2jb.onrender.com';
 const API = `${BACKEND_URL}/api`;
 
 const DOMAINS = [
@@ -48,27 +48,30 @@ const UserForm = ({ onSubmit, onSkip }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     try {
       console.log('Submitting to:', `${API}/users`);
       console.log('Form data:', formData);
-      
+
       const response = await axios.post(`${API}/users`, formData, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000 // 30 seconds (Render free tier may be sleeping)
       });
-      
-      console.log('Success:', response.data);
+
+      console.log('Backend success:', response.data);
       onSubmit(formData.domain);
     } catch (error) {
-      console.error('Error details:', error.response || error);
+      console.error('Full error object:', error);
       
       let errorMessage = 'Failed to submit form. ';
+      
       if (error.response) {
-        errorMessage += `Server error: ${error.response.status}`;
+        // Server responded with a status code outside 2xx
+        errorMessage += `Server error: ${error.response.status} - ${error.response.data?.message || 'Unknown error'}`;
       } else if (error.request) {
-        errorMessage += 'Backend server is not responding. Please make sure the backend is running.';
+        // Request was made but no response received (backend down or CORS)
+        errorMessage += 'Backend server is not responding. It may be waking up (free tier). Please wait 30 seconds and try again.';
+        console.error('No response received. Check if backend is running and CORS is configured.');
       } else {
         errorMessage += error.message;
       }
@@ -111,109 +114,81 @@ const UserForm = ({ onSubmit, onSkip }) => {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label 
-              htmlFor="name"
-              className="block text-xs font-mono tracking-widest uppercase mb-2 text-white/70"
-            >
+            <label className="block text-xs font-mono tracking-widest uppercase mb-2 text-white/70">
               Full Name
             </label>
             <input
-              data-testid="input-name"
               type="text"
-              id="name"
               name="name"
               value={formData.name}
               onChange={handleChange}
               required
-              className="bg-transparent border border-white/15 text-white font-mono px-4 py-3 focus:outline-none focus:border-white focus:ring-0 rounded-none w-full"
-              style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+              className="bg-transparent border border-white/15 text-white font-mono px-4 py-3 focus:outline-none focus:border-white rounded-none w-full"
             />
           </div>
 
           <div>
-            <label 
-              htmlFor="email"
-              className="block text-xs font-mono tracking-widest uppercase mb-2 text-white/70"
-            >
+            <label className="block text-xs font-mono tracking-widest uppercase mb-2 text-white/70">
               Email Address
             </label>
             <input
-              data-testid="input-email"
               type="email"
-              id="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
               required
-              className="bg-transparent border border-white/15 text-white font-mono px-4 py-3 focus:outline-none focus:border-white focus:ring-0 rounded-none w-full"
-              style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+              className="bg-transparent border border-white/15 text-white font-mono px-4 py-3 focus:outline-none focus:border-white rounded-none w-full"
             />
           </div>
 
           <div>
-            <label 
-              htmlFor="education"
-              className="block text-xs font-mono tracking-widest uppercase mb-2 text-white/70"
-            >
+            <label className="block text-xs font-mono tracking-widest uppercase mb-2 text-white/70">
               Education
             </label>
             <select
-              data-testid="select-education"
-              id="education"
               name="education"
               value={formData.education}
               onChange={handleChange}
               required
-              className="bg-transparent border border-white/15 text-white font-mono px-4 py-3 focus:outline-none focus:border-white focus:ring-0 rounded-none w-full appearance-none cursor-pointer"
-              style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+              className="bg-transparent border border-white/15 text-white font-mono px-4 py-3 focus:outline-none focus:border-white rounded-none w-full appearance-none cursor-pointer"
             >
-              <option value="" className="bg-[#141414] text-white">Select your education</option>
+              <option value="" className="bg-[#141414]">Select your education</option>
               {EDUCATION_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value} className="bg-[#141414] text-white">{opt.label}</option>
+                <option key={opt.value} value={opt.value} className="bg-[#141414]">{opt.label}</option>
               ))}
             </select>
           </div>
 
           <div>
-            <label 
-              htmlFor="domain"
-              className="block text-xs font-mono tracking-widest uppercase mb-2 text-white/70"
-            >
+            <label className="block text-xs font-mono tracking-widest uppercase mb-2 text-white/70">
               Career Interest
             </label>
             <select
-              data-testid="select-domain"
-              id="domain"
               name="domain"
               value={formData.domain}
               onChange={handleChange}
               required
-              className="bg-transparent border border-white/15 text-white font-mono px-4 py-3 focus:outline-none focus:border-white focus:ring-0 rounded-none w-full appearance-none cursor-pointer"
-              style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+              className="bg-transparent border border-white/15 text-white font-mono px-4 py-3 focus:outline-none focus:border-white rounded-none w-full appearance-none cursor-pointer"
             >
-              <option value="" className="bg-[#141414] text-white">Select your interest</option>
+              <option value="" className="bg-[#141414]">Select your interest</option>
               {DOMAINS.map(domain => (
-                <option key={domain.value} value={domain.value} className="bg-[#141414] text-white">{domain.label}</option>
+                <option key={domain.value} value={domain.value} className="bg-[#141414]">{domain.label}</option>
               ))}
             </select>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 pt-4">
             <button
-              data-testid="user-form-submit"
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 bg-white text-black font-bold uppercase tracking-widest px-8 py-4 hover:bg-[#FF3300] hover:text-white transition-colors duration-300 rounded-none disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ fontFamily: "'Outfit', sans-serif" }}
+              className="flex-1 bg-white text-black font-bold uppercase tracking-widest px-8 py-4 hover:bg-[#FF3300] hover:text-white transition-colors duration-300 rounded-none disabled:opacity-50"
             >
               {isSubmitting ? 'Submitting...' : 'Get My Roadmap'}
             </button>
             <button
-              data-testid="user-form-later"
               type="button"
               onClick={onSkip}
               className="flex-1 bg-transparent text-white font-mono text-sm underline underline-offset-4 px-4 py-4 hover:text-[#FF3300] transition-colors duration-300 rounded-none"
-              style={{ fontFamily: "'IBM Plex Mono', monospace" }}
             >
               Skip for Now
             </button>
