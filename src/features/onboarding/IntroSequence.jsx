@@ -1,26 +1,30 @@
 import { motion } from 'framer-motion';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 const IntroSequence = ({ onComplete }) => {
   const [phase, setPhase] = useState(0);
   const [typedText, setTypedText] = useState('');
   const quote = "A platform to guide students from confusion to clarity.";
+  const typingStartedRef = useRef(false);   // Prevents re‑typing
 
   const handleComplete = useCallback(() => {
     if (onComplete) onComplete();
   }, [onComplete]);
 
+  // Phase timings (unchanged from your working version)
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 100),
-      setTimeout(() => setPhase(2), 600),
-      setTimeout(() => setPhase(3), 1000),
+      setTimeout(() => setPhase(1), 100),   // "Welcome to" appears
+      setTimeout(() => setPhase(2), 600),   // "TOOL VERSE" appears
+      setTimeout(() => setPhase(3), 1000),  // Typing starts
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
 
+  // Typing animation (runs only once, even if phase changes)
   useEffect(() => {
-    if (phase < 3) return;
+    if (phase < 3 || typingStartedRef.current) return;
+    typingStartedRef.current = true;
 
     let currentIndex = 0;
     const typingInterval = setInterval(() => {
@@ -29,14 +33,14 @@ const IntroSequence = ({ onComplete }) => {
         currentIndex++;
       } else {
         clearInterval(typingInterval);
-        setTimeout(() => setPhase(4), 800);
-        setTimeout(() => setPhase(5), 1300);
-        setTimeout(() => handleComplete(), 1500);
+        setTimeout(() => setPhase(4), 800);   // pause after typing
+        setTimeout(() => setPhase(5), 1300);  // begin fade‑out
+        setTimeout(() => handleComplete(), 1500); // full fade‑out + transition
       }
-    }, 30);
+    }, 30); // 30ms per character → 1.65s for 55 characters
 
     return () => clearInterval(typingInterval);
-  }, [phase, handleComplete]);
+  }, [phase, handleComplete, quote.length]);
 
   return (
     <motion.div
@@ -45,6 +49,7 @@ const IntroSequence = ({ onComplete }) => {
       animate={{ opacity: phase === 5 ? 0 : 1 }}
       transition={{ duration: 0.7 }}
     >
+      {/* Background gradient */}
       <div className="absolute inset-0 pointer-events-none">
         <motion.div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full"
@@ -55,6 +60,7 @@ const IntroSequence = ({ onComplete }) => {
       </div>
 
       <div className="text-center px-6 relative z-10">
+        {/* "Welcome to" */}
         <motion.div
           data-testid="welcome-text"
           initial={{ opacity: 0, y: 15 }}
@@ -66,6 +72,7 @@ const IntroSequence = ({ onComplete }) => {
           Welcome to
         </motion.div>
 
+        {/* "TOOL VERSE" */}
         <motion.h1
           data-testid="toolverse-title"
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -87,6 +94,7 @@ const IntroSequence = ({ onComplete }) => {
           </motion.span>
         </motion.h1>
 
+        {/* Underline */}
         <motion.div
           initial={{ scaleX: 0 }}
           animate={{ scaleX: phase >= 3 ? 1 : 0 }}
@@ -94,6 +102,7 @@ const IntroSequence = ({ onComplete }) => {
           className="w-24 h-[2px] bg-[#FF3300] mx-auto mb-6 origin-center"
         />
 
+        {/* Typing quote */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: phase >= 3 ? 1 : 0 }}
